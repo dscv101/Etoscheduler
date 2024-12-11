@@ -31,9 +31,8 @@ jobs:
 
     # Step 4: Run Ruff for PEP8 and docstring checks
     - name: Run Ruff Lint
-      run: |
-        # Lint for PEP8 and Google-style docstrings
-        ruff . --select E,F --extend-select D --ignore D203
+  run: |
+    ruff check . --select E,F --extend-select D --ignore D203
 
     # Step 5: Run Black for formatting
     - name: Run Black Formatter
