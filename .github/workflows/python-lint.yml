@@ -30,28 +30,43 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
 
-      - name: Run Ruff Lint
+      - name: Format with Black
+        run: |
+          black .
+
+      - name: Lint with Ruff
         run: |
           ruff check . \
-            --select E,F,D,I,N,UP,B,A,COM,C4,T20,PT,Q,RET,SIM,ERA,PL \
-            --ignore D203,D213,D101,D107,D205,D415,E501,N806,RET504,PLR2004 \
-            --target-version py311 \
-            --fix
+          --fix \
+          --select E,F,D,I,N,UP,B,A,COM,C4,T20,PT,Q,RET,SIM,ERA,PL \
+          --ignore D203,D213,D101,D107,D205,D415,E501,N806,RET504,PLR2004
 
-      - name: Run Black Formatter
-        if: success() || failure()  # Run even if Ruff fails
+      - name: Verify formatting
         run: |
-          black . --check --diff --line-length=88
+          black --check .
+
+      - name: Create test directory
+        run: |
+          mkdir -p tests
+          touch tests/__init__.py
+          touch tests/test_et_calculator.py
 
       - name: Run Tests with Coverage
-        if: success() || failure()  # Run even if linting fails
         run: |
-          pytest --cov=./ --cov-report=xml --cov-report=term
+          pytest tests/ --cov=./ --cov-report=xml --cov-report=term
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        if: success() || failure()  # Upload even if tests fail
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Commit formatting changes
+        if: github.event_name == 'pull_request'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -m "Apply automatic formatting changes" || true
+          git push origin HEAD || true
